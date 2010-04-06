@@ -1,0 +1,239 @@
+<html>
+<body>
+This package contains the teneighty.org Fast Fourier Transform system.
+
+<h1>FAQ</h1>
+
+<ol>
+<li>
+<b>Just how fast is this package?</b>
+<br>
+The FFT package is fast, but only relatively speaking... Let me qualify that statement in the following way: There are
+very few pure-Java FFT package available; in fact, this is the ONLY one I know of which supports multiple FFT algorithms
+and offers any kind of intelligence in terms of preparing an efficient plan to evaluate arbitrary size FFTs. The nearest
+equivalent, in Java, is the jfftpack, a Java translation of an old C system. It works well enough, but efficiently supports
+transform sizes which are composed solely of the factors 2, 3, and 5. This package has marginally better performance than
+the jfftpack for the aforementioned factor sizes, but beats it very handily for other sizes (usually about an 
+order of magnitude and occasionally two). 
+There are, of course, FFT libraries for higher-performance languages (C and C++), but 
+comparison to packages written in those languages is not really apt. But let's do one anyways...
+<p>
+FFTW, a modern, super-high-powered FFT library for C/C++ beats the teneighty FFT package by over an order of magnitude, 
+on my machine. FFTW, of course, has the advantage of being run natively, as well as having a much tighter interaction with
+the metal. FFTW is optimized to minimize cache misses, for example - something which is impossible (or 
+arguably meaningless) in a Java context. An an example, the FFTW library performed a 2048-size transform of complex,
+double-precision data in an average of 212 milliseconds (total 1000 transforms, 100 trials); 
+the teneighty FFT package peformed the
+same transform in an average of 3222 milliseconds (total 1000 transforms, 100 trials).
+Of course, you need to take these results with a grain of a salt. Your mileage will
+vary depending on your virtual machine, hardware, transform size, etc. Note also that this is user time, rather than
+processor time.
+<p>
+</li>
+
+
+<li>
+<b>Do I need to create a new transform object each time?</b>
+<br>
+No! The proper way to use this system is to create a single transform object and use it to perform the desired 
+transforms. This will save you time and lots of temporarily allocated objects.
+<p>
+</li>
+
+
+<li>
+<b>Can I save a transform object?</b>
+<br>
+Yes, all tranform classes support have very efficient serialization methods (specifically, 
+their serialized forms are very small,
+although restoration can take some time - e.g. to restore various wavetables, permutation maps, etc.).
+<p>
+</li>
+
+
+<li>
+<b>What were the design goals behind this package?</b>
+<br>
+My primary design concern during this project was to produce a well-architected, object-oriented, pure-Java package. 
+In somes cases, <i>this meant I was willing to sacrifice speed for good object-oriented design principles</i>. 
+Of course, my second goal was to produce a package that can compute the DFT quickly; this package is <i>not</i>, 
+however, designed to compete with the many C/C++ libraries already out there. The world doesn't need another
+C FFT library... that's why I didn't write one.
+<p>
+</li>
+
+
+<li>
+<b>Why did you use Java 1.5/5.0/Tiger?</b>
+<br>
+Because it was there.
+<p>
+</li>
+
+
+<li>
+<b>Is a non-Java 1.5 version available?</b>
+<br>
+No. This package was designed from the begining to run under Java 1.5. If you want to use it with a previous version of Java,
+you will have to remove all of the 1.5 constructs and classes. (In all honesty, this isn't that much work. I may even 
+do it myself someday.)
+<p>
+</li>
+
+
+<li>
+<b>Why does the backwards (inverse) compute an unnormalized transform?</b>
+<br>
+For several reasons:
+<ul>
+<li>Most people do not need a normalized backwards/inverse transform.</li>
+<li>There are many different ways to normalize such a transform.</li>
+</ul>
+<p>
+</li>
+
+
+<li>
+<b>Are multi-dimensional (specifically arbitrary dimensional) transforms supported?</b>
+<br>
+Yes, despite the name, the <code>DopeMatrix</code> classes can handle arrays of arbitrary dimension.
+Originally, I intended to support only one- and two-dimensional transforms, so the name vector 
+and matrix made a lot more sense...
+<p>
+</li>
+
+
+<li>
+<b>Are transform safe for use by multiple threads?</b>
+<br>
+In general, no. Most of the transform classes allocate temporary buffers for use during the transform,
+and concurrent use will mangle the output data. Let me be slightly more precise:
+concurrent use will <i>not</i> damage the tranform objects themselves (in the same way that, for example,
+concurrent modification may damage a non-threadsafe <code>Map</code>; it <i>may</i> cause the output data to become
+corrupted.
+<p>
+The ahead-of-time allocation buffers was a conscious design decision; let me now try to justify it.
+The fundamental reason behind this decision is that Java, obviously, does not have an explicit mechanism
+to de-allocate objects. Imagine, for a minute, that transforms <i>did</i> allocate large numbers (or a number of large)
+temporary objects during the course of a tranform:
+running a large number of transform in a short amount of time could allow 
+temporarily allocated buffers to accummate, possibly affecting future transform performance and generally
+making the JVM angry. This is especially important in, for example, an embedded or real-time 
+application, when garbage collection must use a minimum of time and resources.
+<p>
+The downside of this, of course, is that transform objects are not safe for use by multiple threads, in the
+sense described above. You can obtained a threadsafe view around any transform object by using
+{@link org.teneighty.fft.FourierTransforms#synchronizedFourierTransform(FourierTransform)}.
+</li> 
+
+
+<li>
+<b>Are multi-threaded (i.e. concurrently performed) transforms availabe?</b>
+<br>
+No. I hope to include concurrent transformation algorithms in a future release, even though I have no concrete plans
+or even idea of how to do it at the moment.
+<p>
+</li>
+
+
+<li>
+<b>Does this package support in place transforms?</b>
+<br>
+No, in-place transforms are not supported.
+<p>
+</li>
+
+
+<li>
+<b>How numerically stable is the FFT package?</b>
+<br>
+Honestly, I have no idea. I do not pretend to have a good understanding of numerical stability, so I can't answer this 
+question with any real intelligence.
+<p>
+</li>
+
+
+<li>
+<b>I've found a bug. What should I do?</b>
+<br>
+Please send email to <a href="mailto:bugs@teneighty.org">bugs@teneighty.org</a>, 
+preferably with a good a description of the problem. (Please, at least mention the method and class!) 
+Better would a short piece of code/JUnit test that demonstrates the problem; a fix would be best. 
+I'm happy to credit anyone who can provide fixes.
+<p>
+</li>
+
+
+<li>
+<b>Under what license is this software distributed?</b>
+<br>
+The teneighty.org FFT system is distributed under the very liberal MIT License. (This is known as the X or X11 License 
+in some circles.) You can incorporate this package, in source or binary forms, with or without modification, 
+into open or closed source projects. The MIT License is a <i>copycenter</i> style license (c.f. copyright and copyleft), 
+as in: "Take it down to the copy center and make as many copies as you want."
+<p>
+</li>
+
+ 
+<li>
+<b>Why did you create this package?</b>
+<br>
+I've long been fascinated with FFTs, and I'm not really sure why. It probably goes back to an advanced algorithms class
+I took as an undergrad. We studied the Cooley-Tukey and Prime-Factor algorithms (briefly) and looked at several
+applications of discrete Fourier transforms. I distinctly remember thinking at the time, "Wow, I bet it takes a really
+good programmer and smart person to implement stuff like that." I wrote this code to prove to myself that I
+was capable of doing it ... the question of whether I proved this is still open.
+<p>
+</li>
+
+
+<li>
+<b>How can I transform piece of audio/video XYZ?</b>
+<br>
+The FFT package deals only <code>DopeVector</code>s (both the real and complex flavors). It's your responsibility to
+implement this interface to in such a way that it correctly presents the data to be transformed. For audio/video data,
+you typically are dealing with only real data, so you'll want to use the
+{@link org.teneighty.org.dope.RealDopeVector}, by having your class either implement it directly (an easy solution)
+or providing a bridge (in the GOF sense) from your class to 
+<code>RealDopeVector</code> (in my opinion, the more elegant solution). And if you can't implement
+that interface or build such a bridge class... uh, you should probably be fired.
+<p
+</li>
+
+
+<li>
+<b>This package is too slow! You suck! 
+I need to perform FFTs extremely quickly in a hard-realtime environment or people will DIE!</b>
+<br>
+Might I suggest a more <a href="http://www.acm.uiuc.edu/webmonkeys/book/c_guide/">more appropiate language</a> and
+<a href="http://www.fftw.org/">more appropiate library</a> for your project.
+<p>
+</li>
+
+
+<li>
+<b>What's up with the names <code>DopeVector</code>?</b>
+It's the name of an actual data structure. In the words of Dave Barry, "I am <i>not</i> making this up." I could've called
+it something else, but the unintentional comedy value alone overrode all other concerns. 
+I mean, seriously, how much fun is it to drop "real dope vector" in a serious programming conversation, 
+and then watch everyone else muffle their laughs?
+<p>
+</li>
+</ol>
+
+
+<p>&nbsp;<p>
+A few quick thanks:
+<ul>
+<li>Mike Horwitz</li>
+<li>Matt Zelesko</li>
+<li>Dr. Jonathon Gross</li>
+<li>Dr. Elliot Stein</li>
+<li>Josh Reich</li>
+<li>Thomas Peters</li>
+<li>Shaffiq Welji</li>
+</ul>
+
+@author Fran Lattanzio
+</body>
+</html>
