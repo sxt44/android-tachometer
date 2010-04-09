@@ -11,10 +11,12 @@ import android.util.Log;
 
 public class FFTReceiver implements AudioCallback {
 
-    private static final int FFT_SIZE = 128;
-
-    public FFTReceiver() {
-
+    private static final int FFT_SIZE = 512;
+    private HertzReceiver receiver;
+    
+    public FFTReceiver(HertzReceiver recv) {
+        receiver = recv;
+        
         //org.teneighty.fft.DefaultFourierTransformFactory fact = new org.teneighty.fft.DefaultFourierTransformFactory();
 
 //        testFFT(256);
@@ -30,10 +32,25 @@ public class FFTReceiver implements AudioCallback {
     }
 
     @Override
-    public void receiveAudio(short[] audio) {
+    public void receiveAudio(short[] audio, int numSamples) {
+        int offset = 0;
+        while(offset + FFT_SIZE < numSamples) {
+            doFFT(audio, offset);
+            offset += 32;
+        }
+    }
+
+    private void doFFT(short[] audio, int offset) {
         double in[] = new double[FFT_SIZE];
+        long avg = 0;
         for(int i=0; i<FFT_SIZE; i++) {
-            in[i] = audio[i] / 65536.0;
+            avg += audio[i+offset];
+        }
+        
+        avg /= FFT_SIZE;
+        
+        for(int i=0; i<FFT_SIZE; i++) {
+            in[i] = (audio[i+offset]-avg) / 65536.0;
         }
         
         testFFT(FFT_SIZE, in);
@@ -49,25 +66,45 @@ public class FFTReceiver implements AudioCallback {
         RealDopeVector in_dope = new BackedRealDopeVector(data);
         ComplexDopeVector out_dope = new DefaultComplexDopeVector(size);
 
-        long time = System.currentTimeMillis();
+        //long time = System.currentTimeMillis();
         transform.forward(in_dope, out_dope);
-        Log.i("MAJS", "Size: " + size + " took " + (System.currentTimeMillis() - time));
+        //Log.i("MAJS", "Size: " + size + " took " + (System.currentTimeMillis() - time));
 
         double max = -1;
+        double maxMinus = -1;
+        double maxPlus = -1;
         int index = -1;
         for(int i=0; i<size; i++) {
             
-            double imag = out_dope.getImaginary(i);
-            double real = out_dope.getReal(i);
-            double amp = Math.sqrt(imag*imag + real*real);
+            double amp = magAt(out_dope, i);
             if(max < amp) {
                 max = amp;
+                
+                maxPlus = magAt(out_dope, i+1);
+                maxMinus = magAt(out_dope, i-1);
+                
                 index = i;
             }
         }
         
-        Log.i("", "Found highest frequency at index " + index + " at value " + max);
+        double d = (maxPlus - maxMinus) / (maxMinus + max + maxPlus);
+        
+        double freq = (44100 / 2.0) * (index/(double)size);
+        double freq2 = (44100 / 2.0) * ((index + d)/(double)size);
+        Log.i("MAJS", "Found highest frequency at index " + index + "[" + freq + "][" + freq2 + "] at value " + max);
+        receiver.hertz((int) freq2);
+        
         //System.gc();
+    }
+
+    private double magAt(ComplexDopeVector out_dope, int i) {
+        if(i < 0 || i >= out_dope.getLength()) {
+            return 0;
+        }
+        double imag = out_dope.getImaginary(i);
+        double real = out_dope.getReal(i);
+        double amp = Math.sqrt(imag*imag + real*real);
+        return amp;
     }
 
 }

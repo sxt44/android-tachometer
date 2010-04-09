@@ -3,7 +3,6 @@ package se.sandos.android;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
-import android.util.Log;
 
 
 public class Recorder implements Runnable { 
@@ -83,7 +82,7 @@ public class Recorder implements Runnable {
                               "read() returned AudioRecord.ERROR_INVALID_OPERATION"); 
                }
                
-               callback.receiveAudio(tempBuffer);
+               callback.receiveAudio(tempBuffer, bufferRead);
                 
           } 
 
