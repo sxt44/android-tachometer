@@ -19,7 +19,9 @@ public class MyDope extends DefaultComplexDopeVector {
         if(i < 0 || i >= getLength()) {
             return 0;
         }
-        double imag = getImaginary(i);
+        
+        double imag = 0;
+        imag = getImaginary(i);
         double real = getReal(i);
         double amp = Math.sqrt(imag*imag + real*real);
         return amp;

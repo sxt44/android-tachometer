@@ -9,7 +9,7 @@ import android.view.View;
 public class FFTView extends View {
 
     private Paint black;
-    private MyDope vals;
+    private double[] vals;
     
     int w;
     int h;
@@ -27,18 +27,16 @@ public class FFTView extends View {
     {
         super.onDraw(canvas);
         
+        double max = -1;
         if(vals != null) {
-            double[] mag = new double[vals.getLength()/2];
-            double max = -1;
-            for(int i=0; i<mag.length; i++) {
-                mag[i] = vals.magAt(i);
-                max = Math.max(mag[i], max);
+            for (int i = 0; i < vals.length; i++) {
+                max = Math.max(vals[i], max);
             }
             Log.v("MAJS", "MAX: " + max);
             max = Math.max(1.0, max);
-            for(int i=0; i<w && i <mag.length; i++) {
-                double ratio = mag[i] / max;
-                canvas.drawLine(i, h, i, (float) (h-(ratio*h)), black);
+            for (int i = 0; i < w && i < vals.length; i++) {
+                double ratio = vals[i] / max;
+                canvas.drawLine(i, h, i, (float) (h - (ratio * h)), black);
             }
         }
     }
@@ -49,7 +47,7 @@ public class FFTView extends View {
         this.h = h;
     }
     
-    public void newFFT(MyDope vals)
+    public void newFFT(double[] vals)
     {
         this.vals = vals;
     }

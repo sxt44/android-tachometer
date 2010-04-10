@@ -10,12 +10,14 @@ import android.util.Log;
 public class FFTReceiver implements AudioCallback {
 
     private static final int FFT_SIZE = 1024;
-    private static final int HOP = 256;
+    private static final int HOP = 64;
     private HertzReceiver receiver;
     private FFTView fft;
     private double[] avg;
+    private FourierTransform transform;
     
     public FFTReceiver(HertzReceiver recv) {
+        transform = FourierTransformFactory.getTransform(FFT_SIZE);
         receiver = recv;
     }
 
@@ -28,7 +30,9 @@ public class FFTReceiver implements AudioCallback {
             doFFT(audio, offset, sampleRate);
             offset += HOP;
         }
-        
+            
+        fft.newFFT(avg);
+
         FFTResult result = new FFTResult();
         findFreq(avg, result, sampleRate);
         
@@ -59,7 +63,6 @@ public class FFTReceiver implements AudioCallback {
     }
 
     private void testFFT(int size, double[] data, int sampleRate) {
-        FourierTransform transform = FourierTransformFactory.getTransform(size);
         RealDopeVector in_dope = new BackedRealDopeVector(data);
         MyDope out_dope = new MyDope(size);
 
@@ -67,8 +70,6 @@ public class FFTReceiver implements AudioCallback {
         transform.forward(in_dope, out_dope);
         //Log.i("MAJS", "Size: " + size + " took " + (System.currentTimeMillis() - time));
 
-        fft.newFFT(out_dope);
-        
         for(int i=0; i<size/2 && i<avg.length; i++) {
             avg[i] = avg[i] + out_dope.magAt(i);
         }
@@ -107,8 +108,8 @@ public class FFTReceiver implements AudioCallback {
         
         double d = (maxPlus - maxMinus) / (maxMinus + max + maxPlus);
         
-        double freq = (sampleRate / 2) * (index/(double)fftMagnitude.length);
-        double freq2 = (sampleRate / 2) * ((index + d)/(double)fftMagnitude.length);
+        double freq = (sampleRate / FFT_SIZE) * index;
+        double freq2 = (sampleRate / FFT_SIZE) * (index + d);
 
         Log.i("MAJS", "Found highest frequency at index " + index + "[" + freq + "][" + freq2 + "] at value " + max);
 
