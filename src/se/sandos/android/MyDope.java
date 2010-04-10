@@ -22,7 +22,7 @@ public class MyDope extends DefaultComplexDopeVector {
         
         double imag = 0;
         imag = getImaginary(i);
-        double real = getReal(i);
+        double real = getReal(i+4);
         double amp = Math.sqrt(imag*imag + real*real);
         return amp;
     }

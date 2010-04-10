@@ -10,7 +10,7 @@ import android.util.Log;
 public class FFTReceiver implements AudioCallback {
 
     private static final int FFT_SIZE = 1024;
-    private static final int HOP = 64;
+    private static final int HOP = 1024;
     private HertzReceiver receiver;
     private FFTView fft;
     private double[] avg;
@@ -56,7 +56,12 @@ public class FFTReceiver implements AudioCallback {
         avg /= FFT_SIZE;
         
         for(int i=0; i<FFT_SIZE; i++) {
-            in[i] = (audio[i+offset]-avg) / 65536.0;
+            double where = i/((double)FFT_SIZE-1);
+            double window = where;
+            if(window > 0.5) {
+                window = 1.0 - window;
+            }
+            in[i] = ((audio[i+offset]-avg) / 65536.0) * window * 2;
         }
         
         testFFT(FFT_SIZE, in, sampleRate);
@@ -71,7 +76,7 @@ public class FFTReceiver implements AudioCallback {
         //Log.i("MAJS", "Size: " + size + " took " + (System.currentTimeMillis() - time));
 
         for(int i=0; i<size/2 && i<avg.length; i++) {
-            avg[i] = avg[i] + out_dope.magAt(i);
+            avg[i] += out_dope.magAt(i);
         }
     }
 
