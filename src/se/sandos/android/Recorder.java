@@ -13,7 +13,6 @@ public class Recorder implements Runnable {
      private final Object mutex = new Object(); 
      
      private AudioCallback callback;
-     private FFTView fft;
      
      // Changing the sample resolution changes sample type. byte vs. short. 
      private static final int audioEncoding = AudioFormat.ENCODING_PCM_16BIT; 
@@ -51,8 +50,7 @@ public class Recorder implements Runnable {
           int bufferSize = AudioRecord.getMinBufferSize(this.getFrequency(), 
                     this.getChannelConfiguration(), this.getAudioEncoding()); 
           AudioRecord recordInstance = new AudioRecord( 
-                    MediaRecorder.AudioSource.MIC, this.getFrequency(), this 
-                              .getChannelConfiguration(), this.getAudioEncoding(), 
+                    MediaRecorder.AudioSource.MIC, this.getFrequency(), this.getChannelConfiguration(), this.getAudioEncoding(), 
                     bufferSize); 
           short[] tempBuffer = new short[bufferSize]; 
           recordInstance.startRecording(); 

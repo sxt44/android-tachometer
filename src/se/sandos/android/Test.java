@@ -25,10 +25,15 @@ public class Test extends Activity implements HertzReceiver {
     public void onStart()
     {
         super.onStart();
+    }
+    
+    public void onResume()
+    {
+        super.onResume();
         
         FFTReceiver receiver = new FFTReceiver(this);
         receiver.setView(fft);
-        
+
         final Recorder recorderInstance = new Recorder(receiver);
         this.recorder = recorderInstance;
         final Thread th = new Thread(recorderInstance);
@@ -45,13 +50,6 @@ public class Test extends Activity implements HertzReceiver {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                synchronized (this) {
-                    try {
-                        this.wait(10000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
                 recorder.setPaused(true);
                 try {
                     th.join();
