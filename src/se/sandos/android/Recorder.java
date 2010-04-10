@@ -13,7 +13,8 @@ public class Recorder implements Runnable {
      private final Object mutex = new Object(); 
      
      private AudioCallback callback;
-
+     private FFTView fft;
+     
      // Changing the sample resolution changes sample type. byte vs. short. 
      private static final int audioEncoding = AudioFormat.ENCODING_PCM_16BIT; 
 
@@ -82,7 +83,7 @@ public class Recorder implements Runnable {
                               "read() returned AudioRecord.ERROR_INVALID_OPERATION"); 
                }
                
-               callback.receiveAudio(tempBuffer, bufferRead);
+               callback.receiveAudio(tempBuffer, bufferRead, this.getFrequency());
                 
           } 
 

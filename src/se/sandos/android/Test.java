@@ -2,18 +2,23 @@ package se.sandos.android;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class Test extends Activity implements HertzReceiver {
 
     private Thread th;
     private Recorder recorder;
+    private FFTView fft;
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
+        
+        LinearLayout ll = (LinearLayout) findViewById(R.id.ll);
+        fft = new FFTView(getApplicationContext());
+        ll.addView(fft);
     }
 
     @Override
@@ -21,7 +26,10 @@ public class Test extends Activity implements HertzReceiver {
     {
         super.onStart();
         
-        final Recorder recorderInstance = new Recorder(new FFTReceiver(this));
+        FFTReceiver receiver = new FFTReceiver(this);
+        receiver.setView(fft);
+        
+        final Recorder recorderInstance = new Recorder(receiver);
         this.recorder = recorderInstance;
         final Thread th = new Thread(recorderInstance);
         this.th = th;
@@ -32,6 +40,8 @@ public class Test extends Activity implements HertzReceiver {
     @Override
     public void onPause()
     {
+        super.onPause();
+        
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -57,6 +67,8 @@ public class Test extends Activity implements HertzReceiver {
         runOnUiThread(new Runnable(){
             @Override
             public void run() {
+                fft.invalidate();
+                
                 TextView v = (TextView) findViewById(R.id.Frequency);
                 
                 //CharSequence t = v.getText();
