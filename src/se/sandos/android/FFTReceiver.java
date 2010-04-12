@@ -10,7 +10,7 @@ import android.util.Log;
 public class FFTReceiver implements AudioCallback {
 
     private static final int FFT_SIZE = 1024;
-    private static final int HOP = 1024;
+    private static final int HOP = 256;
     private HertzReceiver receiver;
     private FFTView fft;
     private double[] avg;
@@ -31,11 +31,11 @@ public class FFTReceiver implements AudioCallback {
             offset += HOP;
         }
             
-        fft.newFFT(avg);
-
         FFTResult result = new FFTResult();
         findFreq(avg, result, sampleRate);
-        
+
+        fft.newFFT(avg, result.bin);
+
         Log.v("MAJS", "Freq: " + result.frequency);
         receiver.hertz((int) result.frequency);
 
@@ -120,6 +120,7 @@ public class FFTReceiver implements AudioCallback {
 
         result.frequency = freq2;
         result.frequency_raw = freq;
+        result.bin = index;
     }
 
 

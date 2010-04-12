@@ -34,7 +34,7 @@ public class Test extends Activity implements HertzReceiver {
         FFTReceiver receiver = new FFTReceiver(this);
         receiver.setView(fft);
 
-        final Recorder recorderInstance = new Recorder(receiver);
+        final Recorder recorderInstance = new Recorder(receiver, getApplicationContext());
         this.recorder = recorderInstance;
         final Thread th = new Thread(recorderInstance);
         this.th = th;

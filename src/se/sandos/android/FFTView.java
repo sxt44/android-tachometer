@@ -8,8 +8,11 @@ import android.view.View;
 
 public class FFTView extends View {
 
-    private Paint black;
+    private Paint white;
+    private Paint red;
+    private Paint green;
     private double[] vals;
+    private int correctBin;
     
     int w;
     int h;
@@ -17,9 +20,17 @@ public class FFTView extends View {
     public FFTView(Context context) {
         super(context);
         
-        black = new Paint();
-        black.setAntiAlias(false);
-        black.setColor(0xffffffff);
+        white = new Paint();
+        white.setAntiAlias(false);
+        white.setColor(0xffffffff);
+
+        red = new Paint();
+        red.setAntiAlias(false);
+        red.setColor(0xffff0000);
+
+        green = new Paint();
+        green.setAntiAlias(false);
+        green.setColor(0xff00ff00);
     }
 
     @Override
@@ -36,7 +47,14 @@ public class FFTView extends View {
             max = Math.max(1.0, max);
             for (int i = 0; i < w && i < vals.length; i++) {
                 double ratio = vals[i] / max;
-                canvas.drawLine(i, h, i, (float) (h - (ratio * h)), black);
+                Paint p = white;
+                if(i == correctBin) {
+                    p = green;
+                }
+                if(i == 46) {
+                    canvas.drawLine(i, h, i, 0, red);
+                }
+                canvas.drawLine(i, h, i, (float) (h - (ratio * h)), p);
             }
         }
     }
@@ -47,9 +65,10 @@ public class FFTView extends View {
         this.h = h;
     }
     
-    public void newFFT(double[] vals)
+    public void newFFT(double[] vals, int index)
     {
         this.vals = vals;
+        correctBin = index;
     }
     
 }
