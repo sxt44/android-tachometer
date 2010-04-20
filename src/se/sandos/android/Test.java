@@ -2,6 +2,7 @@ package se.sandos.android;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,12 +35,26 @@ public class Test extends Activity implements HertzReceiver {
         FFTReceiver receiver = new FFTReceiver(this);
         receiver.setView(fft);
 
-        final Recorder recorderInstance = new Recorder(receiver, getApplicationContext());
-        this.recorder = recorderInstance;
-        final Thread th = new Thread(recorderInstance);
-        this.th = th;
-        th.start();
-        recorderInstance.setRecording(true);
+        if(th == null) {
+            Log.v("MAJS", "RESUMING RECORDING!");
+            final Recorder recorderInstance = new Recorder(receiver, getApplicationContext());
+            this.recorder = recorderInstance;
+            final Thread th = new Thread(recorderInstance);
+            this.th = th;
+            th.start();
+            recorderInstance.setRecording(true);
+        }
+        
+//        new Thread(new Runnable(){
+//            @Override
+//            public void run() {
+//                short[] fftbuffer = new short[1<<16];
+//                while(true) {
+//                    int res = JniTest.fix_fft(fftbuffer, (short) 16, (short)0);
+//                }
+//            }
+//            
+//        }).start();
     }
     
     @Override
@@ -47,17 +62,25 @@ public class Test extends Activity implements HertzReceiver {
     {
         super.onPause();
         
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                recorder.setPaused(true);
-                try {
-                    th.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+        clearThread();
+    }
+
+    private void clearThread() {
+        Log.v("MAJS", "Clearing thread");
+        recorder.setRecording(false);
+        try {
+            th.interrupt();
+            if(th.isAlive()) {
+                th.join(500);
+                if(!th.isAlive()) {
+                    th = null;
                 }
+            } else {
+                th = null;
             }
-        }).start();
+        } catch (InterruptedException e) {
+            Log.v("MAJS", e.getMessage());
+        }
     }
     
     @Override

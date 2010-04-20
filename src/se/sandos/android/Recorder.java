@@ -11,11 +11,13 @@ import android.os.Environment;
 import android.util.Log;
 
 public class Recorder implements Runnable {
+    private static final int SAMPLERATE = 8000;
     private int frequency;
     private int channelConfiguration;
     private volatile boolean isPaused;
     private volatile boolean isRecording;
     private final Object mutex = new Object();
+    private final static boolean writeFile = false;
 
     private AudioCallback callback;
 
@@ -29,7 +31,7 @@ public class Recorder implements Runnable {
       */
     public Recorder(AudioCallback callback, Context ctx) {
         super();
-        this.setFrequency(44100);
+        this.setFrequency(SAMPLERATE);
         this.setChannelConfiguration(AudioFormat.CHANNEL_CONFIGURATION_MONO);
         this.setPaused(false);
         this.callback = callback;
@@ -48,9 +50,8 @@ public class Recorder implements Runnable {
             }
         }
 
-        // We're important...
          android.os.Process
-         .setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
+         .setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
 
         // Allocate Recorder and Start Recording...
         int bufferRead = 0;
@@ -84,20 +85,20 @@ public class Recorder implements Runnable {
                     throw new IllegalStateException("read() returned AudioRecord.ERROR_INVALID_OPERATION");
                 }
 
-                /*
-                try {
-                    FileOutputStream fos = new FileOutputStream(Environment.getExternalStorageDirectory().toString() + File.separator + "rawAudio", true);
-                    byte[] data = new byte[bufferRead*2];
-                    for(int i=0; i<bufferRead; i++) {
-                        data[i*2] = (byte) (tempBuffer[i] & 0x00ff);
-                        data[i*2+1] = (byte) ((tempBuffer[i] & 0xff00) >> 8);
+                if(writeFile) {
+                    try {
+                        FileOutputStream fos = new FileOutputStream(Environment.getExternalStorageDirectory().toString() + File.separator + "rawAudio", true);
+                        byte[] data = new byte[bufferRead*2];
+                        for(int i=0; i<bufferRead; i++) {
+                            data[i*2] = (byte) (tempBuffer[i] & 0x00ff);
+                            data[i*2+1] = (byte) ((tempBuffer[i] & 0xff00) >> 8);
+                        }
+                        fos.write(data);
+                        Log.v("MAJS", "Wrote " + bufferRead + " bytes");
+                    } catch (Exception e) {
+                        Log.v("MAJS", "Error: " + e);
                     }
-                    fos.write(data);
-                    Log.v("MAJS", "Wrote " + bufferRead + " bytes");
-                } catch (Exception e) {
-                    Log.v("MAJS", "Error: " + e);
                 }
-                */
                 
                 callback.receiveAudio(tempBuffer, bufferRead, this.getFrequency());
 
@@ -106,6 +107,7 @@ public class Recorder implements Runnable {
             // Close resources...
             recordInstance.stop();
             recordInstance.release();
+            Log.v("MAJS", "Cleaning up recorder etc");
         }
     }
 
