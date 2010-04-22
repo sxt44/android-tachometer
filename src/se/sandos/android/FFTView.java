@@ -7,9 +7,9 @@ import android.view.View;
 
 public class FFTView extends View {
 
-    private Paint white, red, green, lightgrey, darkgrey, blackhole;
+    private Paint white, red, green, lightgrey, darkgrey, blackhole, green2;
     private long[] vals;
-    private int correctBin;
+    private int correctBin, correctBin2;
     private int samplerate;
     
     int w;
@@ -43,6 +43,10 @@ public class FFTView extends View {
         green = new Paint();
         green.setAntiAlias(false);
         green.setColor(0xff00ff00);
+
+        green2 = new Paint();
+        green2.setAntiAlias(false);
+        green2.setColor(0xff55ff55);
     }
 
     @Override
@@ -60,15 +64,19 @@ public class FFTView extends View {
                 max = Math.max(vals[i], max);
             }
             //Log.v("MAJS", "MAX: " + max);
-            max = Math.max(100, max);
+            max = Math.max(100000, max);
             for (int i = 0; i < w && i < vals.length; i++) {
-                int binNumber = i*2;
+                int binNumber = i/2;
                 double ratio = vals[binNumber] / max;
                 double ratio2 = vals[binNumber+1] / max;
                 ratio = Math.max(ratio, ratio2);
                 Paint p = white;
                 if(binNumber == correctBin || binNumber + 1 == correctBin) {
                     p = green;
+                }
+
+                if(binNumber == correctBin2 || binNumber + 1 == correctBin2) {
+                    p = green2;
                 }
                 
                 int hh =  (int)((binNumber*samplerate/(double)bins)/100.0);
@@ -108,12 +116,13 @@ public class FFTView extends View {
         this.h = h;
     }
     
-    public void newFFT(long[] vals, int index, int samplerate, int bins)
+    public void newFFT(long[] vals, FFTResult result, int samplerate, int bins)
     {
         this.bins = bins;
         this.samplerate = samplerate;
         this.vals = vals;
-        correctBin = index;
+        correctBin = result.bin;
+        correctBin2 = result.bin2;
     }
     
 }

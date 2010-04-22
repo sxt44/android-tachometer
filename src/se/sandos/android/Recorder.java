@@ -12,6 +12,7 @@ import android.util.Log;
 
 public class Recorder implements Runnable {
     private static final int SAMPLERATE = 8000;
+    //private static final int SAMPLERATE = 44100;
     private int frequency;
     private int channelConfiguration;
     private volatile boolean isPaused;
@@ -57,6 +58,7 @@ public class Recorder implements Runnable {
         int bufferRead = 0;
         int bufferSize = AudioRecord.getMinBufferSize(this.getFrequency(), this.getChannelConfiguration(),
                 this.getAudioEncoding())*8;
+        Log.v("MAJS", "Buffersize is " + bufferSize);
         AudioRecord recordInstance = new AudioRecord(MediaRecorder.AudioSource.MIC, this.getFrequency(), this
                 .getChannelConfiguration(), this.getAudioEncoding(), bufferSize);
         short[] tempBuffer = new short[bufferSize];

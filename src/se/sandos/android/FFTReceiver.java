@@ -18,6 +18,8 @@ public class FFTReceiver implements AudioCallback {
     private long[] avg = new long[FFT_SIZE/2];
     private FourierTransform transform;
     
+    private final static boolean doubleDft = false;
+    
     public FFTReceiver(HertzReceiver recv) {
         //transform = FourierTransformFactory.getTransform(FFT_SIZE);
         receiver = recv;
@@ -43,21 +45,39 @@ public class FFTReceiver implements AudioCallback {
             
         Log.v("MAJS", "" + num + " FFTs took " + (System.currentTimeMillis() - s));
         
-        long max = Long.MIN_VALUE;
-        int index = -1;
-        for(int i=1; i<FFT_SIZE/2; i++) {
-            if(max < avg[i]) {
-                max = avg[i];
-                index = i;
+        
+        if(doubleDft) {
+            short[] magdft = null;
+            magdft = new short[FFT_SIZE];
+
+            for(int i=0; i<FFT_SIZE/2; i++) {
+                magdft[i] = (short) (avg[i]);
+            }
+            Log.v("MAJS", "first val " + magdft[0]);
+            JniTest.fix_fft(magdft, (short) FFT_SIZE_BITS, (short)0);
+    
+            for(int i=0; i<FFT_SIZE/2; i++) {
+                long mag = (long) Math.sqrt((long)magdft[i] * magdft[i] + (long)magdft[i*2] * magdft[i*2]);
+                avg[i] = mag;
             }
         }
-        Log.v("MAJS", "max at " + index + "[" + binFreq(index, sampleRate) + "] is " + max);
+
+        
+//        long max = Long.MIN_VALUE;
+//        int index = -1;
+//        for(int i=1; i<FFT_SIZE/2; i++) {
+//            if(max < avg[i]) {
+//                max = avg[i];
+//                index = i;
+//            }
+//        }
+        //Log.v("MAJS", "max at " + index + "[" + binFreq(index, sampleRate) + "] is " + max);
         
         FFTResult result = new FFTResult();
-        result.frequency = binFreq(index, sampleRate);
+        //result.frequency = binFreq(index, sampleRate);
         findFreq(avg, result, sampleRate);
 //
-        fft.newFFT(avg, result.bin, sampleRate, FFT_SIZE);
+        fft.newFFT(avg, result, sampleRate, FFT_SIZE);
 //
 //        //Log.v("MAJS", "Freq: " + result.frequency);
         receiver.hertz((int) result.frequency);
@@ -79,22 +99,25 @@ public class FFTReceiver implements AudioCallback {
 //        for(int i=FFT_SIZE/2; i<FFT_SIZE; i++) {
 //            dummy[i] = 0;
 //        }
-        for(int i=0; i<FFT_SIZE; i++) {
-            dummy[i] = audio[i+offset];
-        }
+        System.arraycopy(audio, offset, dummy, 0, FFT_SIZE);
+//        for(int i=0; i<FFT_SIZE; i++) {
+//            dummy[i] = audio[i+offset];
+//        }
         
 //        Log.v("MAJS", "Firt values java: " + dummy[0]);
 //        Log.v("MAJS", "Next-Last value java: " + dummy[FFT_SIZE/2-1]);
 //        Log.v("MAJS", "Last value java: " + dummy[FFT_SIZE/2]);
 
         JniTest.fix_fft(dummy, (short) FFT_SIZE_BITS, (short)0);
-         
+ 
         for(int i=0; i<FFT_SIZE/2; i++) {
-            long mag = (long) Math.sqrt((long)dummy[i] * dummy[i] + (long)dummy[i*2] * dummy[i*2]);
+            long mag = (long)dummy[i] * dummy[i] + (long)dummy[i*2] * dummy[i*2];
             //avg[i] += dummy[i];
-            avg[i] += mag;
+            if(binFreq(i, sampleRate) < 500) {
+                avg[i] += mag;
+            }
         }
-        
+
 //        double in[] = new double[FFT_SIZE];
 //        long avg = 0;
 //        for(int i=0; i<FFT_SIZE; i++) {
@@ -136,15 +159,19 @@ public class FFTReceiver implements AudioCallback {
     private void findFreq(long[] fftMagnitude, FFTResult result, int sampleRate)
     {
         double max = -1;
+        double maxTwo = -1;
         double maxMinus = -1;
         double maxPlus = -1;
         int index = -1;
+        int index2 = -1;
         
         for(int i=0; i<fftMagnitude.length; i++) {
             double amp = fftMagnitude[i];
-            if(max < amp) {
+            int freq = binFreq(i, sampleRate);
+            if(max < amp && freq > 25 && freq < 70) {
+                maxTwo = max;
+                index2 = index;
                 max = amp;
-                
                 maxPlus = 0;
                 if(i+1 < fftMagnitude.length) {
                     maxPlus = fftMagnitude[i+1];
@@ -164,10 +191,22 @@ public class FFTReceiver implements AudioCallback {
         double freq = sampleRate * index / FFT_SIZE;
         double freq2 = sampleRate * (index + d) / FFT_SIZE;
 
-        Log.i("MAJS", "Found highest frequency at index " + index + "[" + freq + "][" + freq2 + "] at value " + max);
+        double freq3 = sampleRate * index2 / FFT_SIZE;
+        
+        double harmonicRatio = Math.max(freq2, freq3) / Math.min(freq2, freq3);
+        if(harmonicRatio > 1.8 && harmonicRatio < 2.2) {
+            Log.v("MAJS", "Found harmonic: " + Math.min(freq2, freq3) + " " + Math.max(freq2, freq3) / 2 + " " + Math.max(freq2, freq3));
+            Log.v("MAJS", "RPM: " + Math.max(freq2, freq3) * 60 / 2);
+        }
+        
+        Log.i("MAJS", "Found highest frequency at index " + index + "[" + freq + "][" + freq2 + "] at value " + max + " index2 " + index2 + " " + harmonicRatio);
 
+        
         result.frequency = freq2;
         result.frequency_raw = freq;
         result.bin = index;
+        
+        result.bin2 = index2;
+        result.freq2 = binFreq(index2, sampleRate);
     }
 }
