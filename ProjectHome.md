@@ -1,0 +1,1 @@
+Using audio processing to estimate RPM from sound, useful for RC models.
